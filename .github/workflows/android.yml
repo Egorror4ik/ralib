@@ -35,7 +35,11 @@ jobs:
 
     - name: Build and Package APK
       run: |
+        # Создаём папку для сборки
+        mkdir -p build-android
         cd build-android
+        
+        # Настраиваем и собираем проект
         cmake .. \
           -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
           -DANDROID_PLATFORM=android-21 \
@@ -71,7 +75,7 @@ jobs:
         </manifest>
         EOF
         
-        # Упаковываем APK (используем временную папку)
+        # Упаковываем APK
         $ANDROID_HOME/build-tools/33.0.2/aapt package -f -M apk/AndroidManifest.xml -I $ANDROID_HOME/platforms/android-33/android.jar -F game.apk apk/
         
         # Добавляем библиотеку

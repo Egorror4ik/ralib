@@ -1,4 +1,7 @@
-#include "raylib.h"
+#include "raylib_game.h"
+
+Sound fxCoin;
+Font font;
 
 int main(void) {
     InitWindow(0, 0, "Моя игра");

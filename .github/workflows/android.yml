@@ -43,7 +43,15 @@ jobs:
           -DANDROID_ABI=arm64-v8a \
           -DPLATFORM=Android \
           -DGRAPHICS=GRAPHICS_API_OPENGL_ES2
-        cmake --build . --target package
+        cmake --build .
+        # Ищем, куда положился APK
+        find . -name "*.apk" -exec cp {} ./ \;
+        # Если APK не найден, пробуем собрать через package
+        if [ -z "$(ls *.apk 2>/dev/null)" ]; then
+          cmake --build . --target package
+        fi
+        # Копируем все найденные APK в корень build-android
+        find . -name "*.apk" -exec cp {} ./ \;
 
     - name: Upload APK
       uses: actions/upload-artifact@v4

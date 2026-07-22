@@ -1,16 +1,16 @@
-name: Android
+name: Build Android APK
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-android:
+  build:
     runs-on: ubuntu-22.04
     steps:
-    - name: Checkout
+    - name: Checkout code
       uses: actions/checkout@v4
       with:
-        submodules: 'recursive'
+        submodules: recursive
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -18,19 +18,27 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
-    - name: Setup Android NDK
+    - name: Install Android SDK and NDK
       run: |
-        echo "y" | sdkmanager "ndk;26.1.10909125"
+        sudo apt-get update -y
+        sudo apt-get install -y wget unzip
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        mkdir -p android-sdk/cmdline-tools
+        unzip commandlinetools-linux-*.zip -d android-sdk/cmdline-tools
+        mv android-sdk/cmdline-tools/cmdline-tools android-sdk/cmdline-tools/latest
+        export ANDROID_HOME=$PWD/android-sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+        echo "y" | sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+        echo "y" | sdkmanager --sdk_root=$ANDROID_HOME "ndk;26.1.10909125"
+        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
-    - name: Build with CMake
+    - name: Build APK
       run: |
         mkdir build-android
         cd build-android
         cmake .. \
-          -DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/26.1.10909125/build/cmake/android.toolchain.cmake \
+          -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
           -DANDROID_PLATFORM=android-21 \
           -DANDROID_ABI=arm64-v8a \
           -DPLATFORM=Android \
@@ -40,5 +48,5 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: android-apk
+        name: game.apk
         path: build-android/*.apk

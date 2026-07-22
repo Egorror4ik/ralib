@@ -44,10 +44,10 @@ jobs:
           -DPLATFORM=Android \
           -DGRAPHICS=GRAPHICS_API_OPENGL_ES2
         cmake --build .
-        # Вручную создаём APK из собранного бинарника
+        # Создаём чистую папку для APK
         mkdir -p apk/lib/arm64-v8a
         cp raylib-game-template/raylib-game-template apk/lib/arm64-v8a/
-        # Создаём AndroidManifest.xml (ТОЛЬКО ОДИН РАЗ!)
+        # Создаём AndroidManifest.xml
         cat > apk/AndroidManifest.xml << 'EOF'
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -68,10 +68,12 @@ jobs:
             </application>
         </manifest>
         EOF
-        # Упаковываем APK
-        $ANDROID_HOME/build-tools/33.0.2/aapt package -f -M apk/AndroidManifest.xml -I $ANDROID_HOME/platforms/android-33/android.jar -F game.apk apk/
+        # Упаковываем APK (флаг -f перезаписывает существующий)
+        $ANDROID_HOME/build-tools/33.0.2/aapt package -f -M apk/AndroidManifest.xml -I $ANDROID_HOME/platforms/android-33/android.jar -F game.unaligned.apk apk/
         # Добавляем библиотеку
-        $ANDROID_HOME/build-tools/33.0.2/aapt add game.apk apk/lib/arm64-v8a/raylib-game-template
+        $ANDROID_HOME/build-tools/33.0.2/aapt add game.unaligned.apk apk/lib/arm64-v8a/raylib-game-template
+        # Выравниваем APK
+        $ANDROID_HOME/build-tools/33.0.2/zipalign -f -p 4 game.unaligned.apk game.apk
         # Создаём отладочный ключ (если его нет)
         if [ ! -f $ANDROID_HOME/.android/debug.keystore ]; then
           mkdir -p $ANDROID_HOME/.android

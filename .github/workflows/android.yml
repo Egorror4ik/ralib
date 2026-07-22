@@ -44,17 +44,14 @@ jobs:
           -DPLATFORM=Android \
           -DGRAPHICS=GRAPHICS_API_OPENGL_ES2
         cmake --build .
-        # Ищем, куда положился APK
-        find . -name "*.apk" -exec cp {} ./ \;
-        # Если APK не найден, пробуем собрать через package
-        if [ -z "$(ls *.apk 2>/dev/null)" ]; then
-          cmake --build . --target package
-        fi
-        # Копируем все найденные APK в корень build-android
-        find . -name "*.apk" -exec cp {} ./ \;
+        # ПРИНУДИТЕЛЬНО СОЗДАЁМ APK
+        cmake --build . --target package
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: game.apk
-        path: build-android/*.apk
+        name: game-apk
+        path: |
+          build-android/*.apk
+          build-android/**/*.apk
+          build-android/package/*.apk

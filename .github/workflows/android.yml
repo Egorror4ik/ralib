@@ -48,12 +48,12 @@ jobs:
           -DGRAPHICS=GRAPHICS_API_OPENGL_ES2
         cmake --build .
         
-        # Создаём чистую структуру для APK
+        # Создаём чистую структуру для APK (УДАЛЯЕМ СТАРУЮ ПАПКУ)
         rm -rf apk
         mkdir -p apk/lib/arm64-v8a
         cp raylib-game-template/raylib-game-template apk/lib/arm64-v8a/
         
-        # Создаём AndroidManifest.xml
+        # Создаём AndroidManifest.xml в ПРАВИЛЬНОМ месте
         cat > apk/AndroidManifest.xml << 'EOF'
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -75,15 +75,22 @@ jobs:
         </manifest>
         EOF
         
-        # Упаковываем APK
+        # Упаковываем APK (используем -f для перезаписи)
         $ANDROID_HOME/build-tools/33.0.2/aapt package -f -M apk/AndroidManifest.xml -I $ANDROID_HOME/platforms/android-33/android.jar -F game.apk apk/
         
-        # Добавляем библиотеку
-        $ANDROID_HOME/build-tools/33.0.2/aapt add game.apk apk/lib/arm64-v8a/raylib-game-template
+        # Добавляем библиотеку (ПРОВЕРЯЕМ, ЧТО ФАЙЛ СУЩЕСТВУЕТ)
+        if [ -f apk/lib/arm64-v8a/raylib-game-template ]; then
+          $ANDROID_HOME/build-tools/33.0.2/aapt add game.apk apk/lib/arm64-v8a/raylib-game-template
+        else
+          echo "Библиотека не найдена!"
+          exit 1
+        fi
         
-        # Создаём отладочный ключ
+        # Создаём отладочный ключ (если его нет)
         mkdir -p $ANDROID_HOME/.android
-        keytool -genkey -v -keystore $ANDROID_HOME/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=US" -storepass android -keypass android 2>/dev/null || true
+        if [ ! -f $ANDROID_HOME/.android/debug.keystore ]; then
+          keytool -genkey -v -keystore $ANDROID_HOME/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=US" -storepass android -keypass android
+        fi
         
         # Подписываем APK
         $ANDROID_HOME/build-tools/33.0.2/apksigner sign --ks $ANDROID_HOME/.android/debug.keystore --ks-pass pass:android --key-pass pass:android game.apk

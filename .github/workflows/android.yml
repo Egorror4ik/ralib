@@ -21,7 +21,7 @@ jobs:
     - name: Install Android SDK and NDK
       run: |
         sudo apt-get update -y
-        sudo apt-get install -y wget unzip
+        sudo apt-get install -y wget unzip zip
         wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         mkdir -p android-sdk/cmdline-tools
         unzip commandlinetools-linux-*.zip -d android-sdk/cmdline-tools
@@ -52,7 +52,7 @@ jobs:
         mkdir -p apk/lib/arm64-v8a
         cp raylib-game-template/raylib-game-template apk/lib/arm64-v8a/
         
-        # Создаём AndroidManifest.xml
+        # Создаём AndroidManifest.xml (БЕЗ сжатия)
         cat > apk/AndroidManifest.xml << 'EOF'
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -74,9 +74,10 @@ jobs:
         </manifest>
         EOF
         
-        # Упаковываем APK с помощью zip (обходит все проблемы aapt)
+        # Упаковываем APK с zip (НЕ сжимаем AndroidManifest.xml)
         cd apk
-        zip -r ../game.apk .
+        zip -r -0 ../game.apk AndroidManifest.xml
+        zip -r ../game.apk lib/
         cd ..
         
         # Создаём отладочный ключ
@@ -85,8 +86,8 @@ jobs:
           keytool -genkey -v -keystore $ANDROID_HOME/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=US" -storepass android -keypass android
         fi
         
-        # Подписываем APK
-        $ANDROID_HOME/build-tools/33.0.2/apksigner sign --ks $ANDROID_HOME/.android/debug.keystore --ks-pass pass:android --key-pass pass:android game.apk
+        # Подписываем APK с явным указанием minSdkVersion
+        $ANDROID_HOME/build-tools/33.0.2/apksigner sign --min-sdk-version 21 --ks $ANDROID_HOME/.android/debug.keystore --ks-pass pass:android --key-pass pass:android game.apk
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
